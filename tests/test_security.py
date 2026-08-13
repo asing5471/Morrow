@@ -1,5 +1,9 @@
 """Tests for Morrow network security checks."""
 
+import pytest
+from playwright.async_api import async_playwright
+
+from backend.browser.manager import BrowserSessionManager
 from backend.security.network import is_valid_navigation_url
 
 
@@ -36,3 +40,42 @@ def test_rejects_unsupported_scheme() -> None:
 def test_rejects_url_without_host() -> None:
     """URLs without a host should be rejected."""
     assert not is_valid_navigation_url("https://")
+
+
+@pytest.mark.asyncio
+async def test_navigation_rejects_file_url() -> None:
+    """Browser sessions should reject file URLs."""
+    async with async_playwright() as playwright:
+        manager = BrowserSessionManager(playwright)
+        session = await manager.create_session()
+
+        with pytest.raises(ValueError, match="Invalid navigation URL"):
+            await session.navigate("file:///etc/passwd")
+
+        await manager.close_all()
+
+
+@pytest.mark.asyncio
+async def test_navigation_rejects_javascript_url() -> None:
+    """Browser sessions should reject JavaScript URLs."""
+    async with async_playwright() as playwright:
+        manager = BrowserSessionManager(playwright)
+        session = await manager.create_session()
+
+        with pytest.raises(ValueError, match="Invalid navigation URL"):
+            await session.navigate("javascript:alert(1)")
+
+        await manager.close_all()
+
+
+@pytest.mark.asyncio
+async def test_navigation_rejects_data_url() -> None:
+    """Browser sessions should reject data URLs."""
+    async with async_playwright() as playwright:
+        manager = BrowserSessionManager(playwright)
+        session = await manager.create_session()
+
+        with pytest.raises(ValueError, match="Invalid navigation URL"):
+            await session.navigate("data:text/html,<h1>Hello</h1>")
+
+        await manager.close_all()
