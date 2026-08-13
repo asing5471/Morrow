@@ -108,6 +108,18 @@ async def test_navigate() -> None:
 
         await manager.close_all()
 
+@pytest.mark.asyncio
+async def test_page_title() -> None:
+    """A session should expose the current page title."""
+    async with async_playwright() as playwright:
+        manager = BrowserSessionManager(playwright)
+
+        session = await manager.create_session()
+        await session.navigate("https://example.com")
+
+        assert await session.page.title() == "Example Domain"
+
+        await manager.close_all()
 
 def test_api_create_session() -> None:
     """The API should create a session and return its status."""
