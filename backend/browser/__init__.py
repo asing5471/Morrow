@@ -1,1 +1,1 @@
-
+"""Browser management for Morrow."""
