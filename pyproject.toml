@@ -28,6 +28,10 @@ dev = [
 ]
 
 
+[project.scripts]
+morrow = "backend.cli:main"
+
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "strict"
