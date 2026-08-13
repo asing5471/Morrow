@@ -1,6 +1,7 @@
 """Browser session lifecycle for Morrow."""
 
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from uuid import uuid4
 
 from playwright.async_api import Browser, BrowserContext, Page, Playwright
@@ -17,6 +18,8 @@ class BrowserSession:
     browser: Browser
     context: BrowserContext
     page: Page
+    created_at: datetime
+    status: str = "active"
     _closed: bool = field(default=False, init=False)
 
     @classmethod
@@ -32,7 +35,13 @@ class BrowserSession:
             browser=browser,
             context=context,
             page=page,
+            created_at=datetime.now(timezone.utc),
         )
+
+    @property
+    def current_url(self) -> str:
+        """Return the current browser page URL."""
+        return self.page.url
 
     async def navigate(self, url: str) -> None:
         """Navigate the session's page to an allowed web URL."""
@@ -47,5 +56,7 @@ class BrowserSession:
             return
 
         self._closed = True
+        self.status = "closed"
+
         await self.context.close()
         await self.browser.close()
