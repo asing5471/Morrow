@@ -9,7 +9,5 @@ async def launch_browser(
     playwright: Playwright,
     settings: BrowserSettings,
 ) -> Browser:
-    """Launch a Chromium browser using Morrow's browser configuration."""
-    return await playwright.chromium.launch(
-        headless=settings.headless,
-    )
+    """Launch a Chromium browser using Morrow's browser settings."""
+    return await playwright.chromium.launch(headless=settings.headless)
