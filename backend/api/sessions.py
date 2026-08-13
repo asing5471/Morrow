@@ -10,6 +10,7 @@ from backend.api.schemas import (
 )
 from backend.browser.manager import BrowserSessionManager
 
+
 router = APIRouter(prefix="/sessions", tags=["sessions"])
 
 
@@ -18,11 +19,22 @@ def get_session_manager(request: Request) -> BrowserSessionManager:
     return request.app.state.session_manager
 
 
-@router.post("", status_code=status.HTTP_201_CREATED, response_model=SessionStatusResponse)
+@router.post(
+    "",
+    status_code=status.HTTP_201_CREATED,
+    response_model=SessionStatusResponse,
+)
 async def create_session(request: Request) -> SessionStatusResponse:
     """Create a new browser session."""
     manager = get_session_manager(request)
-    session = await manager.create_session()
+
+    try:
+        session = await manager.create_session()
+    except RuntimeError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        ) from exc
 
     return SessionStatusResponse(
         id=session.id,
