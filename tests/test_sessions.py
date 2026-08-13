@@ -63,3 +63,17 @@ async def test_remove_missing_session() -> None:
         assert removed is None
 
         await manager.close_all()
+
+
+@pytest.mark.asyncio
+async def test_navigate() -> None:
+    """A session should be able to navigate its page to a URL."""
+    async with async_playwright() as playwright:
+        manager = BrowserSessionManager(playwright)
+
+        session = await manager.create_session()
+        await session.navigate("https://example.com")
+
+        assert session.page.url == "https://example.com/"
+
+        await manager.close_all()
