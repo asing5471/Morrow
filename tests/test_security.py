@@ -5,8 +5,10 @@ from playwright.async_api import async_playwright
 
 from backend.browser.manager import BrowserSessionManager
 from backend.security import network
-from backend.security.network import is_safe_navigation_url
-from backend.security.network import is_valid_navigation_url
+from backend.security.network import (
+    is_safe_navigation_url,
+    is_valid_navigation_url,
+)
 
 
 def test_accepts_http_url() -> None:
