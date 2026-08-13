@@ -43,6 +43,28 @@ async def test_session_ids_are_unique() -> None:
 
 
 @pytest.mark.asyncio
+async def test_sessions_are_isolated() -> None:
+    """Browser sessions should have independent contexts and pages."""
+    async with async_playwright() as playwright:
+        manager = BrowserSessionManager(playwright)
+
+        first = await manager.create_session()
+        second = await manager.create_session()
+
+        assert first.context is not second.context
+        assert first.page is not second.page
+        assert first.current_url == "about:blank"
+        assert second.current_url == "about:blank"
+
+        await first.navigate("https://example.com")
+
+        assert first.current_url == "https://example.com/"
+        assert second.current_url == "about:blank"
+
+        await manager.close_all()
+
+
+@pytest.mark.asyncio
 async def test_remove_session() -> None:
     """Removing a session should close its browser and stop tracking it."""
     async with async_playwright() as playwright:
