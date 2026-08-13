@@ -11,8 +11,8 @@ def start() -> None:
     """Start the Morrow local server."""
     uvicorn.run(
         "backend.main:app",
-        host=settings.host,
-        port=settings.port,
+        host=settings.server.host,
+        port=settings.server.port,
         reload=False,
     )
 
