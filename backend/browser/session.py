@@ -32,6 +32,10 @@ class BrowserSession:
             page=page,
         )
 
+    async def navigate(self, url: str) -> None:
+        """Navigate the session's page to the given URL."""
+        await self.page.goto(url)
+
     async def close(self) -> None:
         """Close the browser resources owned by this session."""
         if self._closed:
