@@ -1,18 +1,17 @@
 """Browser session API routes."""
 
 from fastapi import APIRouter, HTTPException, Request, status
-from pydantic import BaseModel
 
+from backend.api.schemas import (
+    NavigateRequest,
+    NavigationResponse,
+    SessionResponse,
+    SessionStatusResponse,
+)
 from backend.browser.manager import BrowserSessionManager
 
 
 router = APIRouter(prefix="/sessions", tags=["sessions"])
-
-
-class NavigateRequest(BaseModel):
-    """Request body for browser navigation."""
-
-    url: str
 
 
 def get_session_manager(request: Request) -> BrowserSessionManager:
@@ -20,23 +19,23 @@ def get_session_manager(request: Request) -> BrowserSessionManager:
     return request.app.state.session_manager
 
 
-@router.post("", status_code=status.HTTP_201_CREATED)
-async def create_session(request: Request) -> dict[str, str]:
+@router.post("", status_code=status.HTTP_201_CREATED, response_model=SessionStatusResponse)
+async def create_session(request: Request) -> SessionStatusResponse:
     """Create a new browser session."""
     manager = get_session_manager(request)
     session = await manager.create_session()
 
-    return {
-        "id": session.id,
-        "status": session.status,
-    }
+    return SessionStatusResponse(
+        id=session.id,
+        status=session.status,
+    )
 
 
-@router.get("/{session_id}")
+@router.get("/{session_id}", response_model=SessionResponse)
 async def get_session(
     session_id: str,
     request: Request,
-) -> dict[str, str]:
+) -> SessionResponse:
     """Return information about an active browser session."""
     manager = get_session_manager(request)
     session = manager.get_session(session_id)
@@ -47,20 +46,23 @@ async def get_session(
             detail="Session not found",
         )
 
-    return {
-        "id": session.id,
-        "status": session.status,
-        "created_at": session.created_at.isoformat(),
-        "current_url": session.current_url,
-    }
+    return SessionResponse(
+        id=session.id,
+        status=session.status,
+        created_at=session.created_at.isoformat(),
+        current_url=session.current_url,
+    )
 
 
-@router.post("/{session_id}/navigate")
+@router.post(
+    "/{session_id}/navigate",
+    response_model=NavigationResponse,
+)
 async def navigate_session(
     session_id: str,
     navigation: NavigateRequest,
     request: Request,
-) -> dict[str, str]:
+) -> NavigationResponse:
     """Navigate an active browser session to a validated URL."""
     manager = get_session_manager(request)
     session = manager.get_session(session_id)
@@ -79,18 +81,18 @@ async def navigate_session(
             detail=str(exc),
         ) from exc
 
-    return {
-        "id": session.id,
-        "status": "navigated",
-        "url": session.current_url,
-    }
+    return NavigationResponse(
+        id=session.id,
+        status="navigated",
+        url=session.current_url,
+    )
 
 
-@router.delete("/{session_id}")
+@router.delete("/{session_id}", response_model=SessionStatusResponse)
 async def delete_session(
     session_id: str,
     request: Request,
-) -> dict[str, str]:
+) -> SessionStatusResponse:
     """Close and remove an active browser session."""
     manager = get_session_manager(request)
     session = await manager.remove_session(session_id)
@@ -101,7 +103,7 @@ async def delete_session(
             detail="Session not found",
         )
 
-    return {
-        "id": session.id,
-        "status": "closed",
-    }
+    return SessionStatusResponse(
+        id=session.id,
+        status="closed",
+    )
