@@ -3,7 +3,9 @@
 import pytest
 from fastapi.testclient import TestClient
 from playwright.async_api import async_playwright
+from pydantic import ValidationError
 
+from backend.api.schemas import NavigateRequest
 from backend.browser.manager import BrowserSessionManager
 from backend.main import app
 from backend.security import network
@@ -108,6 +110,7 @@ async def test_navigate() -> None:
 
         await manager.close_all()
 
+
 @pytest.mark.asyncio
 async def test_page_title() -> None:
     """A session should expose the current page title."""
@@ -120,6 +123,20 @@ async def test_page_title() -> None:
         assert await session.page.title() == "Example Domain"
 
         await manager.close_all()
+
+
+def test_navigate_request_accepts_url() -> None:
+    """Navigate requests should accept a URL string."""
+    request = NavigateRequest(url="https://example.com")
+
+    assert request.url == "https://example.com"
+
+
+def test_navigate_request_requires_url() -> None:
+    """Navigate requests should require a URL."""
+    with pytest.raises(ValidationError):
+        NavigateRequest()
+
 
 def test_api_create_session() -> None:
     """The API should create a session and return its status."""
