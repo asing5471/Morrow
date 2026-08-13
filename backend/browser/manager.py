@@ -31,3 +31,12 @@ class BrowserSessionManager:
 
         await session.close()
         return session
+
+    async def close_all(self) -> None:
+        """Close all active browser sessions."""
+        sessions = list(self._sessions.values())
+
+        for session in sessions:
+            await session.close()
+
+        self._sessions.clear()
