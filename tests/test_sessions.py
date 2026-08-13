@@ -21,6 +21,9 @@ async def test_create_session() -> None:
         assert manager.get_session(session.id) is session
         assert session.browser.is_connected()
         assert not session.page.is_closed()
+        assert session.status == "active"
+        assert session.current_url == "about:blank"
+        assert session.created_at is not None
 
         await manager.close_all()
 
@@ -51,6 +54,7 @@ async def test_remove_session() -> None:
         assert removed is session
         assert manager.get_session(session.id) is None
         assert not session.browser.is_connected()
+        assert session.status == "closed"
 
         await manager.close_all()
 
@@ -78,8 +82,68 @@ async def test_navigate() -> None:
         await session.navigate("https://example.com")
 
         assert session.page.url == "https://example.com/"
+        assert session.current_url == "https://example.com/"
 
         await manager.close_all()
+
+
+def test_api_create_session() -> None:
+    """The API should create a session and return its status."""
+    with TestClient(app) as client:
+        response = client.post("/sessions")
+
+        assert response.status_code == 201
+
+        body = response.json()
+
+        assert body["id"]
+        assert body["status"] == "active"
+
+
+def test_api_get_session() -> None:
+    """The API should return session metadata."""
+    with TestClient(app) as client:
+        create_response = client.post("/sessions")
+
+        assert create_response.status_code == 201
+
+        session_id = create_response.json()["id"]
+
+        response = client.get(f"/sessions/{session_id}")
+
+        assert response.status_code == 200
+
+        body = response.json()
+
+        assert body["id"] == session_id
+        assert body["status"] == "active"
+        assert body["created_at"]
+        assert body["current_url"] == "about:blank"
+
+
+def test_api_delete_session() -> None:
+    """The API should close and remove an active browser session."""
+    with TestClient(app) as client:
+        create_response = client.post("/sessions")
+
+        assert create_response.status_code == 201
+
+        session_id = create_response.json()["id"]
+
+        response = client.delete(f"/sessions/{session_id}")
+
+        assert response.status_code == 200
+        assert response.json() == {
+            "id": session_id,
+            "status": "closed",
+        }
+
+        missing_response = client.get(f"/sessions/{session_id}")
+
+        assert missing_response.status_code == 404
+        assert missing_response.json() == {
+            "detail": "Session not found",
+        }
 
 
 def test_api_navigate_session() -> None:
