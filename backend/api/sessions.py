@@ -10,7 +10,6 @@ from backend.api.schemas import (
 )
 from backend.browser.manager import BrowserSessionManager
 
-
 router = APIRouter(prefix="/sessions", tags=["sessions"])
 
 
