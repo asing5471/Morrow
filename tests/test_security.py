@@ -42,6 +42,44 @@ def test_rejects_url_without_host() -> None:
     assert not is_valid_navigation_url("https://")
 
 
+def test_rejects_localhost() -> None:
+    """The localhost hostname should be rejected."""
+    assert not is_valid_navigation_url("http://localhost")
+
+
+def test_rejects_loopback_ipv4() -> None:
+    """IPv4 loopback addresses should be rejected."""
+    assert not is_valid_navigation_url("http://127.0.0.1")
+
+
+def test_rejects_private_ipv4() -> None:
+    """Private IPv4 addresses should be rejected."""
+    assert not is_valid_navigation_url("http://192.168.1.1")
+    assert not is_valid_navigation_url("http://10.0.0.1")
+    assert not is_valid_navigation_url("http://172.16.0.1")
+
+
+def test_rejects_link_local_ipv4() -> None:
+    """IPv4 link-local addresses should be rejected."""
+    assert not is_valid_navigation_url("http://169.254.169.254")
+
+
+def test_rejects_loopback_ipv6() -> None:
+    """IPv6 loopback addresses should be rejected."""
+    assert not is_valid_navigation_url("http://[::1]")
+
+
+def test_rejects_private_ipv6() -> None:
+    """IPv6 private addresses should be rejected."""
+    assert not is_valid_navigation_url("http://[fc00::1]")
+
+
+def test_rejects_unspecified_ip_addresses() -> None:
+    """Unspecified IP addresses should be rejected."""
+    assert not is_valid_navigation_url("http://0.0.0.0")
+    assert not is_valid_navigation_url("http://[::]")
+
+
 @pytest.mark.asyncio
 async def test_navigation_rejects_file_url() -> None:
     """Browser sessions should reject file URLs."""
