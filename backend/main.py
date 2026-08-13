@@ -15,9 +15,7 @@ async def lifespan(app: FastAPI):
         app.state.session_manager = BrowserSessionManager(playwright)
         yield
 
-        # Active sessions should be closed before Playwright shuts down.
-        for session in list(app.state.session_manager._sessions.values()):
-            await session.close()
+        await app.state.session_manager.close_all()
 
 
 app = FastAPI(
