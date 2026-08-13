@@ -322,3 +322,22 @@ def test_api_shutdown_closes_sessions() -> None:
 
     assert session.status == "closed"
     assert manager.get_session(session_id) is None
+
+@pytest.mark.asyncio
+async def test_max_sessions_limit() -> None:
+    """The manager should reject sessions beyond the configured limit."""
+    async with async_playwright() as playwright:
+        manager = BrowserSessionManager(playwright)
+
+        sessions = []
+
+        for _ in range(5):
+            sessions.append(await manager.create_session())
+
+        with pytest.raises(
+            RuntimeError,
+            match="Maximum number of browser sessions reached",
+        ):
+            await manager.create_session()
+
+        await manager.close_all()
