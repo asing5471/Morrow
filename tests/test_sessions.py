@@ -304,6 +304,7 @@ def test_api_navigate_rejects_private_dns(
             "detail": "Invalid navigation URL",
         }
 
+
 def test_api_shutdown_closes_sessions() -> None:
     """Application shutdown should close active browser sessions."""
     with TestClient(app) as client:
