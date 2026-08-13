@@ -5,6 +5,8 @@ from uuid import uuid4
 
 from playwright.async_api import Browser, BrowserContext, Page, Playwright
 
+from backend.security.network import is_valid_navigation_url
+
 
 @dataclass
 class BrowserSession:
@@ -33,7 +35,10 @@ class BrowserSession:
         )
 
     async def navigate(self, url: str) -> None:
-        """Navigate the session's page to the given URL."""
+        """Navigate the session's page to an allowed web URL."""
+        if not is_valid_navigation_url(url):
+            raise ValueError("Invalid navigation URL")
+
         await self.page.goto(url)
 
     async def close(self) -> None:
