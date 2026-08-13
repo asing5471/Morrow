@@ -1,26 +1,42 @@
-"""Morrow application entry point."""
+"""Management of active browser sessions."""
 
-from contextlib import asynccontextmanager
+from playwright.async_api import Playwright
 
-from fastapi import FastAPI
-from playwright.async_api import async_playwright
-
-from backend.browser.manager import BrowserSessionManager
+from backend.browser.session import BrowserSession
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """Start and stop Morrow's shared Playwright runtime."""
-    async with async_playwright() as playwright:
-        app.state.session_manager = BrowserSessionManager(playwright)
-        yield
+class BrowserSessionManager:
+    """Create, track, and remove active browser sessions."""
 
-        await app.state.session_manager.close_all()
+    def __init__(self, playwright: Playwright) -> None:
+        self._playwright = playwright
+        self._sessions: dict[str, BrowserSession] = {}
 
+    async def create_session(self) -> BrowserSession:
+        """Create and register a new browser session."""
+        session = await BrowserSession.create(self._playwright)
+        self._sessions[session.id] = session
+        return session
 
-app = FastAPI(
-    title="Morrow",
-    description="Private, local-first browser infrastructure.",
-    version="0.1.0",
-    lifespan=lifespan,
-)
+    def get_session(self, session_id: str) -> BrowserSession | None:
+        """Return an active session, or None if it does not exist."""
+        return self._sessions.get(session_id)
+
+    async def remove_session(self, session_id: str) -> BrowserSession | None:
+        """Close and remove a session, if it exists."""
+        session = self._sessions.pop(session_id, None)
+
+        if session is None:
+            return None
+
+        await session.close()
+        return session
+
+    async def close_all(self) -> None:
+        """Close all active browser sessions."""
+        sessions = list(self._sessions.values())
+
+        for session in sessions:
+            await session.close()
+
+        self._sessions.clear()
