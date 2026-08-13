@@ -28,7 +28,7 @@ async def create_session(request: Request) -> dict[str, str]:
 
     return {
         "id": session.id,
-        "status": "created",
+        "status": session.status,
     }
 
 
@@ -49,7 +49,9 @@ async def get_session(
 
     return {
         "id": session.id,
-        "status": "active",
+        "status": session.status,
+        "created_at": session.created_at.isoformat(),
+        "current_url": session.current_url,
     }
 
 
@@ -80,7 +82,7 @@ async def navigate_session(
     return {
         "id": session.id,
         "status": "navigated",
-        "url": session.page.url,
+        "url": session.current_url,
     }
 
 
