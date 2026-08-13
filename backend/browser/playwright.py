@@ -2,7 +2,14 @@
 
 from playwright.async_api import Browser, Playwright
 
+from backend.config import BrowserSettings
 
-async def launch_browser(playwright: Playwright) -> Browser:
-    """Launch a Chromium browser using Morrow's default configuration."""
-    return await playwright.chromium.launch(headless=True)
+
+async def launch_browser(
+    playwright: Playwright,
+    settings: BrowserSettings,
+) -> Browser:
+    """Launch a Chromium browser using Morrow's browser configuration."""
+    return await playwright.chromium.launch(
+        headless=settings.headless,
+    )
