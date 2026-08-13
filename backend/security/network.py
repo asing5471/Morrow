@@ -57,6 +57,17 @@ def is_valid_navigation_url(url: str) -> bool:
     return is_safe_hostname(parsed.hostname)
 
 
+async def resolve_hostname(hostname: str) -> list[str]:
+    """Resolve a hostname and return its resolved IP addresses."""
+    addresses = await asyncio.get_running_loop().getaddrinfo(
+        hostname,
+        None,
+        type=0,
+    )
+
+    return [address[4][0] for address in addresses]
+
+
 async def is_safe_navigation_url(url: str) -> bool:
     """Return True when a URL passes navigation and DNS security checks."""
     if not is_valid_navigation_url(url):
@@ -79,11 +90,7 @@ async def is_safe_navigation_url(url: str) -> bool:
         return True
 
     try:
-        addresses = await asyncio.get_running_loop().getaddrinfo(
-            hostname,
-            None,
-            type=0,
-        )
+        addresses = await resolve_hostname(hostname)
     except OSError:
         return False
 
@@ -91,9 +98,7 @@ async def is_safe_navigation_url(url: str) -> bool:
         return False
 
     for address in addresses:
-        resolved_host = address[4][0]
-
-        if not is_public_ip_address(resolved_host):
+        if not is_public_ip_address(address):
             return False
 
     return True
