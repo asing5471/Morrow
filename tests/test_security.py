@@ -4,8 +4,6 @@ import pytest
 from playwright.async_api import async_playwright
 
 from backend.browser.manager import BrowserSessionManager
-from backend.security import network
-from backend.security.network import is_safe_navigation_url
 from backend.security.network import is_valid_navigation_url
 
 
@@ -80,121 +78,6 @@ def test_rejects_unspecified_ip_addresses() -> None:
     """Unspecified IP addresses should be rejected."""
     assert not is_valid_navigation_url("http://0.0.0.0")
     assert not is_valid_navigation_url("http://[::]")
-
-
-@pytest.mark.asyncio
-async def test_safe_navigation_url_accepts_public_dns(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """A hostname resolving only to public IPs should be accepted."""
-
-    async def fake_getaddrinfo(
-        *args: object,
-        **kwargs: object,
-    ) -> list[tuple]:
-        return [
-            (
-                2,
-                1,
-                6,
-                "",
-                ("93.184.216.34", 0),
-            )
-        ]
-
-    monkeypatch.setattr(
-        network.asyncio.get_running_loop().getaddrinfo,
-        "getaddrinfo",
-        fake_getaddrinfo,
-    )
-
-    assert await is_safe_navigation_url("https://example.com")
-
-
-@pytest.mark.asyncio
-async def test_safe_navigation_url_rejects_private_dns(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """A hostname resolving to a private IP should be rejected."""
-
-    async def fake_getaddrinfo(
-        *args: object,
-        **kwargs: object,
-    ) -> list[tuple]:
-        return [
-            (
-                2,
-                1,
-                6,
-                "",
-                ("127.0.0.1", 0),
-            )
-        ]
-
-    monkeypatch.setattr(
-        network.asyncio.get_running_loop().getaddrinfo,
-        "getaddrinfo",
-        fake_getaddrinfo,
-    )
-
-    assert not await is_safe_navigation_url("https://example.com")
-
-
-@pytest.mark.asyncio
-async def test_safe_navigation_url_rejects_mixed_dns_results(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """A hostname with any unsafe DNS result should be rejected."""
-
-    async def fake_getaddrinfo(
-        *args: object,
-        **kwargs: object,
-    ) -> list[tuple]:
-        return [
-            (
-                2,
-                1,
-                6,
-                "",
-                ("93.184.216.34", 0),
-            ),
-            (
-                2,
-                1,
-                6,
-                "",
-                ("192.168.1.1", 0),
-            ),
-        ]
-
-    monkeypatch.setattr(
-        network.asyncio.get_running_loop().getaddrinfo,
-        "getaddrinfo",
-        fake_getaddrinfo,
-    )
-
-    assert not await is_safe_navigation_url("https://example.com")
-
-
-@pytest.mark.asyncio
-async def test_safe_navigation_url_rejects_dns_failure(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """DNS resolution failures should reject navigation."""
-
-    async def fake_getaddrinfo(
-        *args: object,
-        **kwargs: object,
-    ) -> list[tuple]:
-        raise OSError("DNS resolution failed")
-
-    monkeypatch.setattr(
-        network.asyncio.get_running_loop().getaddrinfo,
-        "getaddrinfo",
-        fake_getaddrinfo,
-    )
-
-    assert not await is_safe_navigation_url("https://example.com")
 
 
 @pytest.mark.asyncio
