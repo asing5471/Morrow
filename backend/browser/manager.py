@@ -3,6 +3,7 @@
 from playwright.async_api import Playwright
 
 from backend.browser.session import BrowserSession
+from backend.config import settings
 
 
 class BrowserSessionManager:
@@ -14,6 +15,9 @@ class BrowserSessionManager:
 
     async def create_session(self) -> BrowserSession:
         """Create and register a new browser session."""
+        if len(self._sessions) >= settings.server.max_sessions:
+            raise RuntimeError("Maximum number of browser sessions reached")
+
         session = await BrowserSession.create(self._playwright)
         self._sessions[session.id] = session
         return session
