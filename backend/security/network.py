@@ -1,5 +1,6 @@
 """Network-related security checks for Morrow."""
 
+import asyncio
 import ipaddress
 from urllib.parse import urlparse
 
@@ -41,7 +42,7 @@ def is_safe_hostname(hostname: str) -> bool:
 
 
 def is_valid_navigation_url(url: str) -> bool:
-    """Return True when a URL is suitable for browser navigation."""
+    """Return True when a URL passes local navigation checks."""
     try:
         parsed = urlparse(url)
     except ValueError:
@@ -54,3 +55,45 @@ def is_valid_navigation_url(url: str) -> bool:
         return False
 
     return is_safe_hostname(parsed.hostname)
+
+
+async def is_safe_navigation_url(url: str) -> bool:
+    """Return True when a URL passes navigation and DNS security checks."""
+    if not is_valid_navigation_url(url):
+        return False
+
+    parsed = urlparse(url)
+    hostname = parsed.hostname
+
+    if hostname is None:
+        return False
+
+    # Literal IP addresses have already been checked by
+    # is_valid_navigation_url(), so DNS resolution is only needed
+    # for hostnames.
+    try:
+        ipaddress.ip_address(hostname)
+    except ValueError:
+        pass
+    else:
+        return True
+
+    try:
+        addresses = await asyncio.get_running_loop().getaddrinfo(
+            hostname,
+            None,
+            type=0,
+        )
+    except OSError:
+        return False
+
+    if not addresses:
+        return False
+
+    for address in addresses:
+        resolved_host = address[4][0]
+
+        if not is_public_ip_address(resolved_host):
+            return False
+
+    return True
