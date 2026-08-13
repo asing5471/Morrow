@@ -1,9 +1,12 @@
 """Tests for Morrow browser session management."""
 
 import pytest
+from fastapi.testclient import TestClient
 from playwright.async_api import async_playwright
 
 from backend.browser.manager import BrowserSessionManager
+from backend.main import app
+from backend.security import network
 
 
 @pytest.mark.asyncio
@@ -77,3 +80,111 @@ async def test_navigate() -> None:
         assert session.page.url == "https://example.com/"
 
         await manager.close_all()
+
+
+def test_api_navigate_session() -> None:
+    """The API should navigate an active browser session."""
+    with TestClient(app) as client:
+        create_response = client.post("/sessions")
+
+        assert create_response.status_code == 201
+
+        session_id = create_response.json()["id"]
+
+        response = client.post(
+            f"/sessions/{session_id}/navigate",
+            json={"url": "https://example.com"},
+        )
+
+        assert response.status_code == 200
+        assert response.json() == {
+            "id": session_id,
+            "status": "navigated",
+            "url": "https://example.com/",
+        }
+
+
+def test_api_navigate_missing_session() -> None:
+    """The API should return 404 for an unknown session."""
+    with TestClient(app) as client:
+        response = client.post(
+            "/sessions/does-not-exist/navigate",
+            json={"url": "https://example.com"},
+        )
+
+        assert response.status_code == 404
+        assert response.json() == {
+            "detail": "Session not found",
+        }
+
+
+def test_api_navigate_rejects_file_url() -> None:
+    """The API should reject file URLs."""
+    with TestClient(app) as client:
+        create_response = client.post("/sessions")
+
+        assert create_response.status_code == 201
+
+        session_id = create_response.json()["id"]
+
+        response = client.post(
+            f"/sessions/{session_id}/navigate",
+            json={"url": "file:///etc/passwd"},
+        )
+
+        assert response.status_code == 400
+        assert response.json() == {
+            "detail": "Invalid navigation URL",
+        }
+
+
+def test_api_navigate_rejects_javascript_url() -> None:
+    """The API should reject JavaScript URLs."""
+    with TestClient(app) as client:
+        create_response = client.post("/sessions")
+
+        assert create_response.status_code == 201
+
+        session_id = create_response.json()["id"]
+
+        response = client.post(
+            f"/sessions/{session_id}/navigate",
+            json={"url": "javascript:alert(1)"},
+        )
+
+        assert response.status_code == 400
+        assert response.json() == {
+            "detail": "Invalid navigation URL",
+        }
+
+
+def test_api_navigate_rejects_private_dns(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The API should reject hostnames resolving to private IPs."""
+
+    async def fake_resolve_hostname(hostname: str) -> list[str]:
+        return ["127.0.0.1"]
+
+    monkeypatch.setattr(
+        network,
+        "resolve_hostname",
+        fake_resolve_hostname,
+    )
+
+    with TestClient(app) as client:
+        create_response = client.post("/sessions")
+
+        assert create_response.status_code == 201
+
+        session_id = create_response.json()["id"]
+
+        response = client.post(
+            f"/sessions/{session_id}/navigate",
+            json={"url": "https://example.com"},
+        )
+
+        assert response.status_code == 400
+        assert response.json() == {
+            "detail": "Invalid navigation URL",
+        }
