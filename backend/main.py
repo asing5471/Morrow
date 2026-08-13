@@ -1,42 +1,51 @@
-"""Management of active browser sessions."""
+"""Morrow FastAPI application entry point."""
 
-from playwright.async_api import Playwright
+from contextlib import asynccontextmanager
 
-from backend.browser.session import BrowserSession
+from fastapi import FastAPI
+from playwright.async_api import async_playwright
+
+from backend.api.sessions import router as sessions_router
+from backend.browser.manager import BrowserSessionManager
+from backend.config import settings
 
 
-class BrowserSessionManager:
-    """Create, track, and remove active browser sessions."""
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Manage application startup and shutdown resources."""
+    async with async_playwright() as playwright:
+        app.state.session_manager = BrowserSessionManager(playwright)
 
-    def __init__(self, playwright: Playwright) -> None:
-        self._playwright = playwright
-        self._sessions: dict[str, BrowserSession] = {}
+        yield
 
-    async def create_session(self) -> BrowserSession:
-        """Create and register a new browser session."""
-        session = await BrowserSession.create(self._playwright)
-        self._sessions[session.id] = session
-        return session
+        await app.state.session_manager.close_all()
 
-    def get_session(self, session_id: str) -> BrowserSession | None:
-        """Return an active session, or None if it does not exist."""
-        return self._sessions.get(session_id)
 
-    async def remove_session(self, session_id: str) -> BrowserSession | None:
-        """Close and remove a session, if it exists."""
-        session = self._sessions.pop(session_id, None)
+app = FastAPI(
+    title="Morrow",
+    description="Private, local-first browser infrastructure for browser automation and agents.",
+    lifespan=lifespan,
+)
 
-        if session is None:
-            return None
 
-        await session.close()
-        return session
+app.include_router(sessions_router)
 
-    async def close_all(self) -> None:
-        """Close all active browser sessions."""
-        sessions = list(self._sessions.values())
 
-        for session in sessions:
-            await session.close()
+@app.get("/")
+async def health_check() -> dict[str, str]:
+    """Return basic application status."""
+    return {
+        "name": "Morrow",
+        "status": "running",
+    }
 
-        self._sessions.clear()
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(
+        "backend.main:app",
+        host=settings.host,
+        port=settings.port,
+        reload=False,
+    )
