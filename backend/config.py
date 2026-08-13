@@ -9,6 +9,7 @@ class ServerSettings:
 
     host: str = "127.0.0.1"
     port: int = 3000
+    max_sessions: int = 5
 
 
 @dataclass(frozen=True)
