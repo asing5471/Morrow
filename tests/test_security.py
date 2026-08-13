@@ -158,6 +158,31 @@ async def test_safe_navigation_url_rejects_dns_failure(
 
 
 @pytest.mark.asyncio
+async def test_navigation_rejects_private_dns(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Browser sessions should reject hostnames resolving to private IPs."""
+
+    async def fake_resolve_hostname(hostname: str) -> list[str]:
+        return ["127.0.0.1"]
+
+    monkeypatch.setattr(
+        network,
+        "resolve_hostname",
+        fake_resolve_hostname,
+    )
+
+    async with async_playwright() as playwright:
+        manager = BrowserSessionManager(playwright)
+        session = await manager.create_session()
+
+        with pytest.raises(ValueError, match="Invalid navigation URL"):
+            await session.navigate("https://example.com")
+
+        await manager.close_all()
+
+
+@pytest.mark.asyncio
 async def test_navigation_rejects_file_url() -> None:
     """Browser sessions should reject file URLs."""
     async with async_playwright() as playwright:
