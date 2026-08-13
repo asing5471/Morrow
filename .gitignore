@@ -1,1 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
 
+# Virtual environments
+.venv/
+venv/
+env/
+
+# macOS
+.DS_Store
+
+# Local environment/configuration
+.env
+.env.*
+
+# Morrow local data
+data/*
+!data/.gitkeep
