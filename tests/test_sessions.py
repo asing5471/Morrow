@@ -303,3 +303,21 @@ def test_api_navigate_rejects_private_dns(
         assert response.json() == {
             "detail": "Invalid navigation URL",
         }
+
+def test_api_shutdown_closes_sessions() -> None:
+    """Application shutdown should close active browser sessions."""
+    with TestClient(app) as client:
+        response = client.post("/sessions")
+
+        assert response.status_code == 201
+
+        session_id = response.json()["id"]
+
+        manager = client.app.state.session_manager
+        session = manager.get_session(session_id)
+
+        assert session is not None
+        assert session.status == "active"
+
+    assert session.status == "closed"
+    assert manager.get_session(session_id) is None
