@@ -1,43 +1,65 @@
 """Tests for Morrow browser session management."""
 
+import pytest
+from playwright.async_api import async_playwright
+
 from backend.browser.manager import BrowserSessionManager
 
 
-def test_create_session() -> None:
-    """A new session should be created and tracked by the manager."""
-    manager = BrowserSessionManager()
+@pytest.mark.asyncio
+async def test_create_session() -> None:
+    """A new session should launch a browser and create a page."""
+    async with async_playwright() as playwright:
+        manager = BrowserSessionManager(playwright)
 
-    session = manager.create_session()
+        session = await manager.create_session()
 
-    assert session.id
-    assert manager.get_session(session.id) is session
+        assert session.id
+        assert manager.get_session(session.id) is session
+        assert session.browser.is_connected()
+        assert not session.page.is_closed()
+
+        await manager.close_all()
 
 
-def test_session_ids_are_unique() -> None:
+@pytest.mark.asyncio
+async def test_session_ids_are_unique() -> None:
     """Each newly created session should receive a unique ID."""
-    manager = BrowserSessionManager()
+    async with async_playwright() as playwright:
+        manager = BrowserSessionManager(playwright)
 
-    first = manager.create_session()
-    second = manager.create_session()
+        first = await manager.create_session()
+        second = await manager.create_session()
 
-    assert first.id != second.id
+        assert first.id != second.id
 
-
-def test_remove_session() -> None:
-    """Removing a session should stop the manager from tracking it."""
-    manager = BrowserSessionManager()
-
-    session = manager.create_session()
-    removed = manager.remove_session(session.id)
-
-    assert removed is session
-    assert manager.get_session(session.id) is None
+        await manager.close_all()
 
 
-def test_remove_missing_session() -> None:
+@pytest.mark.asyncio
+async def test_remove_session() -> None:
+    """Removing a session should close its browser and stop tracking it."""
+    async with async_playwright() as playwright:
+        manager = BrowserSessionManager(playwright)
+
+        session = await manager.create_session()
+        removed = await manager.remove_session(session.id)
+
+        assert removed is session
+        assert manager.get_session(session.id) is None
+        assert not session.browser.is_connected()
+
+        await manager.close_all()
+
+
+@pytest.mark.asyncio
+async def test_remove_missing_session() -> None:
     """Removing an unknown session should return None."""
-    manager = BrowserSessionManager()
+    async with async_playwright() as playwright:
+        manager = BrowserSessionManager(playwright)
 
-    removed = manager.remove_session("does-not-exist")
+        removed = await manager.remove_session("does-not-exist")
 
-    assert removed is None
+        assert removed is None
+
+        await manager.close_all()
