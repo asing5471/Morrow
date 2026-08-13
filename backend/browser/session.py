@@ -7,6 +7,7 @@ from uuid import uuid4
 from playwright.async_api import Browser, BrowserContext, Page, Playwright
 
 from backend.browser.playwright import launch_browser
+from backend.config import settings
 from backend.security.network import is_safe_navigation_url
 
 
@@ -26,7 +27,7 @@ class BrowserSession:
     @classmethod
     async def create(cls, playwright: Playwright) -> "BrowserSession":
         """Launch a Chromium browser and create an isolated session."""
-        browser = await launch_browser(playwright)
+        browser = await launch_browser(playwright, settings.browser)
         context = await browser.new_context()
         page = await context.new_page()
 
