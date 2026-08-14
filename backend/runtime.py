@@ -7,17 +7,14 @@ from backend.browser.manager import BrowserSessionManager
 
 async def start_runtime(app) -> None:
     """Initialize Morrow runtime resources."""
-    app.state.playwright_context = async_playwright()
+    playwright = await async_playwright().start()
 
-    app.state.playwright = await app.state.playwright_context.start()
-
-    app.state.session_manager = BrowserSessionManager(
-        app.state.playwright,
-    )
+    app.state.playwright = playwright
+    app.state.session_manager = BrowserSessionManager(playwright)
 
 
 async def stop_runtime(app) -> None:
     """Shutdown Morrow runtime resources."""
     await app.state.session_manager.close_all()
 
-    await app.state.playwright_context.stop()
+    await app.state.playwright.stop()
