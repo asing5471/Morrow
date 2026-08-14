@@ -126,6 +126,22 @@ async def test_page_title() -> None:
 
 
 @pytest.mark.asyncio
+async def test_session_page_title_method() -> None:
+    """A session should return the current page title."""
+    async with async_playwright() as playwright:
+        manager = BrowserSessionManager(playwright)
+
+        session = await manager.create_session()
+        await session.navigate("https://example.com")
+
+        title = await session.page_title()
+
+        assert title == "Example Domain"
+
+        await manager.close_all()
+
+
+@pytest.mark.asyncio
 async def test_session_inspect() -> None:
     """A session should return basic information about the current page."""
     async with async_playwright() as playwright:
@@ -188,6 +204,42 @@ def test_api_get_session() -> None:
         assert body["status"] == "active"
         assert body["created_at"]
         assert body["current_url"] == "about:blank"
+
+
+def test_api_get_session_title() -> None:
+    """The API should return the current page title."""
+    with TestClient(app) as client:
+        create_response = client.post("/sessions")
+
+        assert create_response.status_code == 201
+
+        session_id = create_response.json()["id"]
+
+        navigate_response = client.post(
+            f"/sessions/{session_id}/navigate",
+            json={"url": "https://example.com"},
+        )
+
+        assert navigate_response.status_code == 200
+
+        response = client.get(f"/sessions/{session_id}/title")
+
+        assert response.status_code == 200
+        assert response.json() == {
+            "id": session_id,
+            "title": "Example Domain",
+        }
+
+
+def test_api_get_session_title_missing_session() -> None:
+    """The API should return 404 for an unknown session title request."""
+    with TestClient(app) as client:
+        response = client.get("/sessions/does-not-exist/title")
+
+        assert response.status_code == 404
+        assert response.json() == {
+            "detail": "Session not found",
+        }
 
 
 def test_api_delete_session() -> None:
@@ -358,22 +410,5 @@ async def test_max_sessions_limit() -> None:
             match="Maximum number of browser sessions reached",
         ):
             await manager.create_session()
-
-        await manager.close_all()
-
-
-@pytest.mark.asyncio
-async def test_session_page_title_method() -> None:
-    """A session should return the current page title."""
-    async with async_playwright() as playwright:
-        manager = BrowserSessionManager(playwright)
-
-        session = await manager.create_session()
-
-        await session.navigate("https://example.com")
-
-        title = await session.page_title()
-
-        assert title == "Example Domain"
 
         await manager.close_all()
