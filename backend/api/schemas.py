@@ -9,6 +9,19 @@ class NavigateRequest(BaseModel):
     url: str
 
 
+class ClickRequest(BaseModel):
+    """Request body for clicking an element."""
+
+    selector: str
+
+
+class FillRequest(BaseModel):
+    """Request body for filling an input."""
+
+    selector: str
+    value: str
+
+
 class SessionResponse(BaseModel):
     """Browser session information returned by the API."""
 
@@ -31,3 +44,9 @@ class NavigationResponse(BaseModel):
     id: str
     status: str
     url: str
+
+
+class PageContentResponse(BaseModel):
+    """Response containing page HTML."""
+
+    content: str
