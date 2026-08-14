@@ -3,6 +3,7 @@
 from fastapi import APIRouter, HTTPException, Request, status
 
 from backend.api.schemas import (
+    InspectionResponse,
     NavigateRequest,
     NavigationResponse,
     SessionResponse,
@@ -96,6 +97,35 @@ async def navigate_session(
         id=session.id,
         status="navigated",
         url=session.current_url,
+    )
+
+
+@router.get(
+    "/{session_id}/inspect",
+    response_model=InspectionResponse,
+)
+async def inspect_session(
+    session_id: str,
+    request: Request,
+) -> InspectionResponse:
+    """Return basic information about the current page."""
+    manager = get_session_manager(request)
+    session = manager.get_session(session_id)
+
+    if session is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Session not found",
+        )
+
+    inspection = await session.inspect()
+
+    return InspectionResponse(
+        id=session.id,
+        status=session.status,
+        url=inspection["url"],
+        title=inspection["title"],
+        text=inspection["text"],
     )
 
 
