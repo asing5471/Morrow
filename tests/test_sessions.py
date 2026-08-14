@@ -341,3 +341,19 @@ async def test_max_sessions_limit() -> None:
             await manager.create_session()
 
         await manager.close_all()
+
+@pytest.mark.asyncio
+async def test_session_page_title_method() -> None:
+    """A session should return the current page title."""
+    async with async_playwright() as playwright:
+        manager = BrowserSessionManager(playwright)
+
+        session = await manager.create_session()
+
+        await session.navigate("https://example.com")
+
+        title = await session.page_title()
+
+        assert title == "Example Domain"
+
+        await manager.close_all()
