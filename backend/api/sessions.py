@@ -3,7 +3,6 @@
 from fastapi import APIRouter, HTTPException, Request, status
 
 from backend.api.schemas import (
-    InspectionResponse,
     NavigateRequest,
     NavigationResponse,
     SessionResponse,
@@ -101,14 +100,14 @@ async def navigate_session(
 
 
 @router.get(
-    "/{session_id}/inspect",
-    response_model=InspectionResponse,
+    "/{session_id}/title",
+    response_model=dict[str, str],
 )
-async def inspect_session(
+async def get_session_title(
     session_id: str,
     request: Request,
-) -> InspectionResponse:
-    """Return basic information about the current page."""
+) -> dict[str, str]:
+    """Return the current page title for an active browser session."""
     manager = get_session_manager(request)
     session = manager.get_session(session_id)
 
@@ -118,15 +117,10 @@ async def inspect_session(
             detail="Session not found",
         )
 
-    inspection = await session.inspect()
-
-    return InspectionResponse(
-        id=session.id,
-        status=session.status,
-        url=inspection["url"],
-        title=inspection["title"],
-        text=inspection["text"],
-    )
+    return {
+        "id": session.id,
+        "title": await session.page_title(),
+    }
 
 
 @router.delete("/{session_id}", response_model=SessionStatusResponse)
