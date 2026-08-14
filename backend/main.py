@@ -3,22 +3,20 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
-from playwright.async_api import async_playwright
 
 from backend.api.sessions import router as sessions_router
-from backend.browser.manager import BrowserSessionManager
 from backend.config import settings
+from backend.runtime import start_runtime, stop_runtime
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Manage application startup and shutdown resources."""
-    async with async_playwright() as playwright:
-        app.state.session_manager = BrowserSessionManager(playwright)
+    await start_runtime(app)
 
-        yield
+    yield
 
-        await app.state.session_manager.close_all()
+    await stop_runtime(app)
 
 
 app = FastAPI(
