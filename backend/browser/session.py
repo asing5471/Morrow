@@ -57,6 +57,11 @@ class BrowserSession:
             "text": await self.page.locator("body").inner_text(),
         }
 
+    async def find_element(self, selector: str) -> bool:
+        """Return whether an element matching the selector exists."""
+        locator = self.page.locator(selector)
+        return await locator.count() > 0
+
     async def navigate(self, url: str) -> None:
         """Navigate the session's page to an allowed web URL."""
         if not await is_safe_navigation_url(url):
