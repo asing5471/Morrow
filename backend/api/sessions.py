@@ -7,6 +7,7 @@ from backend.api.schemas import (
     NavigationResponse,
     SessionResponse,
     SessionStatusResponse,
+    SessionTitleResponse,
 )
 from backend.browser.manager import BrowserSessionManager
 
@@ -101,12 +102,12 @@ async def navigate_session(
 
 @router.get(
     "/{session_id}/title",
-    response_model=dict[str, str],
+    response_model=SessionTitleResponse,
 )
 async def get_session_title(
     session_id: str,
     request: Request,
-) -> dict[str, str]:
+) -> SessionTitleResponse:
     """Return the current page title for an active browser session."""
     manager = get_session_manager(request)
     session = manager.get_session(session_id)
@@ -117,10 +118,31 @@ async def get_session_title(
             detail="Session not found",
         )
 
-    return {
-        "id": session.id,
-        "title": await session.page_title(),
-    }
+    return SessionTitleResponse(
+        id=session.id,
+        title=await session.page_title(),
+    )
+
+
+@router.get(
+    "/{session_id}/inspect",
+    response_model=dict[str, str],
+)
+async def inspect_session(
+    session_id: str,
+    request: Request,
+) -> dict[str, str]:
+    """Return basic information about the current browser page."""
+    manager = get_session_manager(request)
+    session = manager.get_session(session_id)
+
+    if session is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Session not found",
+        )
+
+    return await session.inspect()
 
 
 @router.delete("/{session_id}", response_model=SessionStatusResponse)
