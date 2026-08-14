@@ -49,6 +49,14 @@ class BrowserSession:
         """Return the current page title."""
         return await self.page.title()
 
+    async def inspect(self) -> dict[str, str]:
+        """Return basic information about the current page."""
+        return {
+            "url": self.current_url,
+            "title": await self.page.title(),
+            "text": await self.page.locator("body").inner_text(),
+        }
+
     async def navigate(self, url: str) -> None:
         """Navigate the session's page to an allowed web URL."""
         if not await is_safe_navigation_url(url):
