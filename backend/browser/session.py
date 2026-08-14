@@ -52,6 +52,22 @@ class BrowserSession:
 
         await self.page.goto(url)
 
+    async def title(self) -> str:
+        """Return the current page title."""
+        return await self.page.title()
+
+    async def click(self, selector: str) -> None:
+        """Click an element on the page."""
+        await self.page.click(selector)
+
+    async def fill(self, selector: str, value: str) -> None:
+        """Fill an input element."""
+        await self.page.fill(selector, value)
+
+    async def content(self) -> str:
+        """Return the current page HTML."""
+        return await self.page.content()
+
     async def close(self) -> None:
         """Close the browser resources owned by this session."""
         if self._closed:
