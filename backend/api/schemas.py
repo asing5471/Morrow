@@ -31,3 +31,13 @@ class NavigationResponse(BaseModel):
     id: str
     status: str
     url: str
+
+
+class InspectionResponse(BaseModel):
+    """Response containing basic information about the current page."""
+
+    id: str
+    status: str
+    url: str
+    title: str
+    text: str
