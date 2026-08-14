@@ -33,11 +33,8 @@ class NavigationResponse(BaseModel):
     url: str
 
 
-class InspectionResponse(BaseModel):
-    """Response containing basic information about the current page."""
+class SessionTitleResponse(BaseModel):
+    """Current browser page title returned by the API."""
 
     id: str
-    status: str
-    url: str
     title: str
-    text: str
