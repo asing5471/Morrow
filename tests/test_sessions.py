@@ -125,6 +125,24 @@ async def test_page_title() -> None:
         await manager.close_all()
 
 
+@pytest.mark.asyncio
+async def test_session_inspect() -> None:
+    """A session should return basic information about the current page."""
+    async with async_playwright() as playwright:
+        manager = BrowserSessionManager(playwright)
+
+        session = await manager.create_session()
+        await session.navigate("https://example.com")
+
+        result = await session.inspect()
+
+        assert result["url"] == "https://example.com/"
+        assert result["title"] == "Example Domain"
+        assert "Example Domain" in result["text"]
+
+        await manager.close_all()
+
+
 def test_navigate_request_accepts_url() -> None:
     """Navigate requests should accept a URL string."""
     request = NavigateRequest(url="https://example.com")
@@ -323,6 +341,7 @@ def test_api_shutdown_closes_sessions() -> None:
     assert session.status == "closed"
     assert manager.get_session(session_id) is None
 
+
 @pytest.mark.asyncio
 async def test_max_sessions_limit() -> None:
     """The manager should reject sessions beyond the configured limit."""
@@ -341,6 +360,7 @@ async def test_max_sessions_limit() -> None:
             await manager.create_session()
 
         await manager.close_all()
+
 
 @pytest.mark.asyncio
 async def test_session_page_title_method() -> None:
