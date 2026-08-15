@@ -22,6 +22,12 @@ class TypeRequest(BaseModel):
     selector: str
     text: str
 
+class CookieRequest(BaseModel):
+    """Request body for setting a browser cookie."""
+
+    name: str
+    value: str
+    url: str
 
 class HoverRequest(BaseModel):
     """Request body for hovering over an element."""
