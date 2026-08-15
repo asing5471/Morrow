@@ -94,6 +94,18 @@ class BrowserSession:
         except Exception as exc:
             raise ValueError("Unable to hover over element") from exc
 
+    async def get_cookies(self) -> list[dict]:
+        """Return cookies for the current browser context."""
+        return await self.context.cookies()
+
+    async def set_cookie(self, cookie: dict) -> None:
+        """Add a cookie to the current browser context."""
+        await self.context.add_cookies([cookie])
+
+    async def clear_cookies(self) -> None:
+        """Clear all cookies from the current browser context."""
+        await self.context.clear_cookies()
+
     async def navigate(self, url: str) -> None:
         """Navigate the session's page to an allowed web URL."""
         if not await is_safe_navigation_url(url):
