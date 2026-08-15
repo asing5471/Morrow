@@ -22,6 +22,7 @@ class TypeRequest(BaseModel):
     selector: str
     text: str
 
+
 class CookieRequest(BaseModel):
     """Request body for setting a browser cookie."""
 
@@ -29,10 +30,18 @@ class CookieRequest(BaseModel):
     value: str
     url: str
 
+
 class HoverRequest(BaseModel):
     """Request body for hovering over an element."""
 
     selector: str
+
+
+class StorageRequest(BaseModel):
+    """Request body for setting a local storage value."""
+
+    key: str
+    value: str
 
 
 def get_session_manager(request: Request) -> BrowserSessionManager:
@@ -176,6 +185,7 @@ async def type_into_element(
         "selector": action.selector,
     }
 
+
 @router.get("/{session_id}/cookies")
 async def get_session_cookies(
     session_id: str,
@@ -227,6 +237,7 @@ async def set_session_cookie(
         "name": cookie.name,
     }
 
+
 @router.delete("/{session_id}/cookies")
 async def clear_session_cookies(
     session_id: str,
@@ -248,6 +259,7 @@ async def clear_session_cookies(
         "id": session.id,
         "status": "cookies_cleared",
     }
+
 
 @router.post("/{session_id}/hover")
 async def hover_element(
@@ -277,4 +289,79 @@ async def hover_element(
         "id": session.id,
         "status": "hovered",
         "selector": action.selector,
+    }
+
+
+@router.get("/{session_id}/storage")
+async def get_session_storage(
+    session_id: str,
+    request: Request,
+) -> dict[str, object]:
+    """Return local storage for the browser session."""
+    manager = get_session_manager(request)
+    session = manager.get_session(session_id)
+
+    if session is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Session not found",
+        )
+
+    return {
+        "id": session.id,
+        "storage": await session.get_local_storage(),
+    }
+
+
+@router.post("/{session_id}/storage")
+async def set_session_storage(
+    session_id: str,
+    storage: StorageRequest,
+    request: Request,
+) -> dict[str, str]:
+    """Set a local storage value for the browser session."""
+    manager = get_session_manager(request)
+    session = manager.get_session(session_id)
+
+    if session is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Session not found",
+        )
+
+    try:
+        await session.set_local_storage(storage.key, storage.value)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=400,
+            detail="Unable to set local storage",
+        ) from exc
+
+    return {
+        "id": session.id,
+        "status": "storage_set",
+        "key": storage.key,
+    }
+
+
+@router.delete("/{session_id}/storage")
+async def clear_session_storage(
+    session_id: str,
+    request: Request,
+) -> dict[str, str]:
+    """Clear local storage for the browser session."""
+    manager = get_session_manager(request)
+    session = manager.get_session(session_id)
+
+    if session is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Session not found",
+        )
+
+    await session.clear_local_storage()
+
+    return {
+        "id": session.id,
+        "status": "storage_cleared",
     }
