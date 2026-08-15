@@ -166,3 +166,64 @@ def test_api_type_text_invalid_element() -> None:
         assert response.json() == {
             "detail": "Unable to type into element",
         }
+
+
+def test_api_get_element_text() -> None:
+    """The API should return text for a matching element."""
+    with TestClient(app) as client:
+        create_response = client.post("/sessions")
+
+        assert create_response.status_code == 201
+        session_id = create_response.json()["id"]
+
+        navigate_response = client.post(
+            f"/sessions/{session_id}/navigate",
+            json={"url": "https://example.com"},
+        )
+
+        assert navigate_response.status_code == 200
+
+        response = client.get(
+            f"/sessions/{session_id}/element/text",
+            params={"selector": "h1"},
+        )
+
+        assert response.status_code == 200
+        assert response.json() == {
+            "id": session_id,
+            "selector": "h1",
+            "text": "Example Domain",
+        }
+
+
+def test_api_get_element_text_missing_session() -> None:
+    """The API should return 404 for an unknown session."""
+    with TestClient(app) as client:
+        response = client.get(
+            "/sessions/does-not-exist/element/text",
+            params={"selector": "h1"},
+        )
+
+        assert response.status_code == 404
+        assert response.json() == {
+            "detail": "Session not found",
+        }
+
+
+def test_api_get_element_text_missing_element() -> None:
+    """The API should return 400 when the element does not exist."""
+    with TestClient(app) as client:
+        create_response = client.post("/sessions")
+
+        assert create_response.status_code == 201
+        session_id = create_response.json()["id"]
+
+        response = client.get(
+            f"/sessions/{session_id}/element/text",
+            params={"selector": "#does-not-exist"},
+        )
+
+        assert response.status_code == 400
+        assert response.json() == {
+            "detail": "Unable to get element text",
+        }
