@@ -228,6 +228,7 @@ def test_api_get_element_text_missing_element() -> None:
             "detail": "Unable to get element text",
         }
 
+
 def test_api_screenshot_session() -> None:
     """The API should return a PNG screenshot of the current page."""
     with TestClient(app) as client:
@@ -263,4 +264,65 @@ def test_api_screenshot_missing_session() -> None:
         assert response.status_code == 404
         assert response.json() == {
             "detail": "Session not found",
+        }
+
+
+def test_api_hover_element() -> None:
+    """The API should hover over an element in the browser session."""
+    with TestClient(app) as client:
+        create_response = client.post("/sessions")
+
+        assert create_response.status_code == 201
+        session_id = create_response.json()["id"]
+
+        navigate_response = client.post(
+            f"/sessions/{session_id}/navigate",
+            json={"url": "https://example.com"},
+        )
+
+        assert navigate_response.status_code == 200
+
+        response = client.post(
+            f"/sessions/{session_id}/hover",
+            json={"selector": "h1"},
+        )
+
+        assert response.status_code == 200
+        assert response.json() == {
+            "id": session_id,
+            "status": "hovered",
+            "selector": "h1",
+        }
+
+
+def test_api_hover_element_missing_session() -> None:
+    """The API should return 404 when hovering in an unknown session."""
+    with TestClient(app) as client:
+        response = client.post(
+            "/sessions/does-not-exist/hover",
+            json={"selector": "h1"},
+        )
+
+        assert response.status_code == 404
+        assert response.json() == {
+            "detail": "Session not found",
+        }
+
+
+def test_api_hover_element_invalid_selector() -> None:
+    """The API should return 400 when an element cannot be hovered."""
+    with TestClient(app) as client:
+        create_response = client.post("/sessions")
+
+        assert create_response.status_code == 201
+        session_id = create_response.json()["id"]
+
+        response = client.post(
+            f"/sessions/{session_id}/hover",
+            json={"selector": "#does-not-exist"},
+        )
+
+        assert response.status_code == 400
+        assert response.json() == {
+            "detail": "Unable to hover over element",
         }
