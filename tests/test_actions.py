@@ -227,3 +227,40 @@ def test_api_get_element_text_missing_element() -> None:
         assert response.json() == {
             "detail": "Unable to get element text",
         }
+
+def test_api_screenshot_session() -> None:
+    """The API should return a PNG screenshot of the current page."""
+    with TestClient(app) as client:
+        create_response = client.post("/sessions")
+
+        assert create_response.status_code == 201
+        session_id = create_response.json()["id"]
+
+        navigate_response = client.post(
+            f"/sessions/{session_id}/navigate",
+            json={"url": "https://example.com"},
+        )
+
+        assert navigate_response.status_code == 200
+
+        response = client.get(
+            f"/sessions/{session_id}/screenshot",
+        )
+
+        assert response.status_code == 200
+        assert response.headers["content-type"] == "image/png"
+        assert response.content.startswith(b"\x89PNG\r\n\x1a\n")
+        assert len(response.content) > 100
+
+
+def test_api_screenshot_missing_session() -> None:
+    """The API should return 404 for an unknown session."""
+    with TestClient(app) as client:
+        response = client.get(
+            "/sessions/does-not-exist/screenshot",
+        )
+
+        assert response.status_code == 404
+        assert response.json() == {
+            "detail": "Session not found",
+        }
