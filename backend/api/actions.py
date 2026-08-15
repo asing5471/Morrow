@@ -1,6 +1,7 @@
 """Browser action API routes for Morrow."""
 
 from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import Response
 from pydantic import BaseModel
 
 from backend.browser.manager import BrowserSessionManager
@@ -78,7 +79,26 @@ async def get_element_text(
         "selector": selector,
         "text": text,
     }
-    
+
+@router.get("/{session_id}/screenshot")
+async def screenshot_session(
+    session_id: str,
+    request: Request,
+) -> Response:
+    """Return a PNG screenshot of the current browser page."""
+    manager = get_session_manager(request)
+    session = manager.get_session(session_id)
+
+    if session is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Session not found",
+        )
+
+    return Response(
+        content=await session.screenshot(),
+        media_type="image/png",
+    )
 
 @router.post("/{session_id}/click")
 async def click_element(
