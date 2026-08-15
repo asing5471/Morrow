@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
+from backend.api.actions import router as actions_router
 from backend.api.sessions import router as sessions_router
 from backend.config import settings
 from backend.runtime import start_runtime, stop_runtime
@@ -27,6 +28,7 @@ app = FastAPI(
 
 
 app.include_router(sessions_router)
+app.include_router(actions_router)
 
 
 @app.get("/")
