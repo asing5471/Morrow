@@ -1,3 +1,4 @@
+```python
 """Network-related security checks for Morrow."""
 
 import asyncio
@@ -13,12 +14,11 @@ def is_allowed_scheme(scheme: str) -> bool:
 
 
 def is_public_ip_address(host: str) -> bool:
-    """Return True when a literal IP address is globally reachable."""
+    """Return True when an IP address is globally reachable."""
     try:
         address = ipaddress.ip_address(host)
     except ValueError:
-        # The host is a domain name rather than a literal IP address.
-        return True
+        return False
 
     return (
         address.is_global
@@ -31,13 +31,13 @@ def is_public_ip_address(host: str) -> bool:
 
 
 def is_safe_hostname(hostname: str) -> bool:
-    """Return True when a hostname is safe under the current checks."""
+    """Return True when a hostname is syntactically safe to resolve."""
     hostname = hostname.lower().rstrip(".")
 
-    if hostname == "localhost":
+    if not hostname or hostname == "localhost":
         return False
 
-    return is_public_ip_address(hostname)
+    return True
 
 
 def is_valid_navigation_url(url: str) -> bool:
@@ -64,7 +64,7 @@ async def resolve_hostname(hostname: str) -> list[str]:
         type=0,
     )
 
-    return [address[4][0] for address in addresses]
+    return list(dict.fromkeys(address[4][0] for address in addresses))
 
 
 async def is_safe_navigation_url(url: str) -> bool:
@@ -78,15 +78,12 @@ async def is_safe_navigation_url(url: str) -> bool:
     if hostname is None:
         return False
 
-    # Literal IP addresses have already been checked by
-    # is_valid_navigation_url(), so DNS resolution is only needed
-    # for hostnames.
     try:
         ipaddress.ip_address(hostname)
     except ValueError:
         pass
     else:
-        return True
+        return is_public_ip_address(hostname)
 
     try:
         addresses = await resolve_hostname(hostname)
@@ -96,8 +93,5 @@ async def is_safe_navigation_url(url: str) -> bool:
     if not addresses:
         return False
 
-    for address in addresses:
-        if not is_public_ip_address(address):
-            return False
-
-    return True
+    return all(is_public_ip_address(address) for address in addresses)
+```
