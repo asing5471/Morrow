@@ -1,4 +1,3 @@
-```python
 """Network-related security checks for Morrow."""
 
 import asyncio
@@ -94,4 +93,3 @@ async def is_safe_navigation_url(url: str) -> bool:
         return False
 
     return all(is_public_ip_address(address) for address in addresses)
-```
