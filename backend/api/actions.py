@@ -49,6 +49,36 @@ async def find_element(
         "found": await session.find_element(selector),
     }
 
+@router.get("/{session_id}/element/text")
+async def get_element_text(
+    session_id: str,
+    selector: str,
+    request: Request,
+) -> dict[str, str]:
+    """Return the text of an element matching a CSS selector."""
+    manager = get_session_manager(request)
+    session = manager.get_session(session_id)
+
+    if session is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Session not found",
+        )
+
+    try:
+        text = await session.get_element_text(selector)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=str(exc),
+        ) from exc
+
+    return {
+        "id": session.id,
+        "selector": selector,
+        "text": text,
+    }
+    
 
 @router.post("/{session_id}/click")
 async def click_element(
