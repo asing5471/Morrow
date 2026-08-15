@@ -22,14 +22,20 @@ def is_public_ip_address(host: str) -> bool:
     return address.is_global
 
 def is_safe_hostname(hostname: str) -> bool:
-    """Return True when a hostname is syntactically safe to resolve."""
+    """Return True when a hostname is safe under the current checks."""
     hostname = hostname.lower().rstrip(".")
 
     if not hostname or hostname == "localhost":
         return False
 
-    return True
+    try:
+        ipaddress.ip_address(hostname)
+    except ValueError:
+        # It is a hostname; DNS validation happens in
+        # is_safe_navigation_url().
+        return True
 
+    return is_public_ip_address(hostname)
 
 def is_valid_navigation_url(url: str) -> bool:
     """Return True when a URL passes local navigation checks."""
