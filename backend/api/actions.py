@@ -23,6 +23,12 @@ class TypeRequest(BaseModel):
     text: str
 
 
+class HoverRequest(BaseModel):
+    """Request body for hovering over an element."""
+
+    selector: str
+
+
 def get_session_manager(request: Request) -> BrowserSessionManager:
     """Return the session manager owned by the application."""
     return request.app.state.session_manager
@@ -49,6 +55,7 @@ async def find_element(
         "selector": selector,
         "found": await session.find_element(selector),
     }
+
 
 @router.get("/{session_id}/element/text")
 async def get_element_text(
@@ -80,6 +87,7 @@ async def get_element_text(
         "text": text,
     }
 
+
 @router.get("/{session_id}/screenshot")
 async def screenshot_session(
     session_id: str,
@@ -99,6 +107,7 @@ async def screenshot_session(
         content=await session.screenshot(),
         media_type="image/png",
     )
+
 
 @router.post("/{session_id}/click")
 async def click_element(
@@ -158,5 +167,36 @@ async def type_into_element(
     return {
         "id": session.id,
         "status": "typed",
+        "selector": action.selector,
+    }
+
+
+@router.post("/{session_id}/hover")
+async def hover_element(
+    session_id: str,
+    action: HoverRequest,
+    request: Request,
+) -> dict[str, str]:
+    """Hover over an element matching a CSS selector."""
+    manager = get_session_manager(request)
+    session = manager.get_session(session_id)
+
+    if session is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Session not found",
+        )
+
+    try:
+        await session.hover(action.selector)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=str(exc),
+        ) from exc
+
+    return {
+        "id": session.id,
+        "status": "hovered",
         "selector": action.selector,
     }
