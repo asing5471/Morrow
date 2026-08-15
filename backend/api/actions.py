@@ -1,11 +1,25 @@
 """Browser action API routes for Morrow."""
 
 from fastapi import APIRouter, HTTPException, Request
+from pydantic import BaseModel
 
 from backend.browser.manager import BrowserSessionManager
 
 
 router = APIRouter(prefix="/sessions", tags=["actions"])
+
+
+class ClickRequest(BaseModel):
+    """Request body for clicking an element."""
+
+    selector: str
+
+
+class TypeRequest(BaseModel):
+    """Request body for typing into an element."""
+
+    selector: str
+    text: str
 
 
 def get_session_manager(request: Request) -> BrowserSessionManager:
@@ -33,4 +47,66 @@ async def find_element(
         "id": session.id,
         "selector": selector,
         "found": await session.find_element(selector),
+    }
+
+
+@router.post("/{session_id}/click")
+async def click_element(
+    session_id: str,
+    action: ClickRequest,
+    request: Request,
+) -> dict[str, str]:
+    """Click an element matching a CSS selector."""
+    manager = get_session_manager(request)
+    session = manager.get_session(session_id)
+
+    if session is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Session not found",
+        )
+
+    try:
+        await session.click(action.selector)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=str(exc),
+        ) from exc
+
+    return {
+        "id": session.id,
+        "status": "clicked",
+        "selector": action.selector,
+    }
+
+
+@router.post("/{session_id}/type")
+async def type_into_element(
+    session_id: str,
+    action: TypeRequest,
+    request: Request,
+) -> dict[str, str]:
+    """Type text into an element matching a CSS selector."""
+    manager = get_session_manager(request)
+    session = manager.get_session(session_id)
+
+    if session is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Session not found",
+        )
+
+    try:
+        await session.type_text(action.selector, action.text)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=str(exc),
+        ) from exc
+
+    return {
+        "id": session.id,
+        "status": "typed",
+        "selector": action.selector,
     }
