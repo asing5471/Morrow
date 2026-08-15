@@ -62,6 +62,20 @@ class BrowserSession:
         locator = self.page.locator(selector)
         return await locator.count() > 0
 
+    async def click(self, selector: str) -> None:
+        """Click an element matching the selector."""
+        try:
+            await self.page.locator(selector).click()
+        except Exception as exc:
+            raise ValueError("Unable to click element") from exc
+
+    async def type_text(self, selector: str, text: str) -> None:
+        """Type text into an element matching the selector."""
+        try:
+            await self.page.locator(selector).fill(text)
+        except Exception as exc:
+            raise ValueError("Unable to type into element") from exc
+
     async def navigate(self, url: str) -> None:
         """Navigate the session's page to an allowed web URL."""
         if not await is_safe_navigation_url(url):
