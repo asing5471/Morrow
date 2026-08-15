@@ -107,23 +107,42 @@ class BrowserSession:
         await self.context.clear_cookies()
 
     async def get_local_storage(self) -> dict[str, str]:
-        """Return all local storage values for the current page."""
+        """Return all localStorage entries for the current page."""
         return await self.page.evaluate(
-            "() => Object.fromEntries(Object.entries(localStorage))"
+            """() => Object.fromEntries(
+                Object.entries(localStorage)
+            )"""
         )
 
     async def set_local_storage(self, key: str, value: str) -> None:
-        """Set a local storage value for the current page."""
+        """Set a localStorage entry for the current page."""
         await self.page.evaluate(
-            """([key, value]) => {
-                localStorage.setItem(key, value);
-            }""",
+            """([key, value]) => localStorage.setItem(key, value)""",
             [key, value],
         )
 
     async def clear_local_storage(self) -> None:
-        """Clear all local storage for the current page."""
+        """Clear all localStorage entries for the current page."""
         await self.page.evaluate("() => localStorage.clear()")
+
+    async def get_session_storage(self) -> dict[str, str]:
+        """Return all sessionStorage entries for the current page."""
+        return await self.page.evaluate(
+            """() => Object.fromEntries(
+                Object.entries(sessionStorage)
+            )"""
+        )
+
+    async def set_session_storage(self, key: str, value: str) -> None:
+        """Set a sessionStorage entry for the current page."""
+        await self.page.evaluate(
+            """([key, value]) => sessionStorage.setItem(key, value)""",
+            [key, value],
+        )
+
+    async def clear_session_storage(self) -> None:
+        """Clear all sessionStorage entries for the current page."""
+        await self.page.evaluate("() => sessionStorage.clear()")
 
     async def navigate(self, url: str) -> None:
         """Navigate the session's page to an allowed web URL."""
