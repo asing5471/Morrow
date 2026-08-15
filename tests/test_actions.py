@@ -326,3 +326,95 @@ def test_api_hover_element_invalid_selector() -> None:
         assert response.json() == {
             "detail": "Unable to hover over element",
         }
+
+def test_api_set_and_get_cookies() -> None:
+    """The API should set and return browser cookies."""
+    with TestClient(app) as client:
+        create_response = client.post("/sessions")
+
+        assert create_response.status_code == 201
+        session_id = create_response.json()["id"]
+
+        set_response = client.post(
+            f"/sessions/{session_id}/cookies",
+            json={
+                "name": "morrow_test",
+                "value": "hello",
+                "url": "https://example.com",
+            },
+        )
+
+        assert set_response.status_code == 200
+        assert set_response.json() == {
+            "id": session_id,
+            "status": "cookie_set",
+            "name": "morrow_test",
+        }
+
+        get_response = client.get(
+            f"/sessions/{session_id}/cookies",
+        )
+
+        assert get_response.status_code == 200
+
+        body = get_response.json()
+
+        assert body["id"] == session_id
+        assert any(
+            cookie["name"] == "morrow_test"
+            and cookie["value"] == "hello"
+            for cookie in body["cookies"]
+        )
+
+
+def test_api_clear_cookies() -> None:
+    """The API should clear all browser cookies."""
+    with TestClient(app) as client:
+        create_response = client.post("/sessions")
+
+        assert create_response.status_code == 201
+        session_id = create_response.json()["id"]
+
+        set_response = client.post(
+            f"/sessions/{session_id}/cookies",
+            json={
+                "name": "morrow_test",
+                "value": "hello",
+                "url": "https://example.com",
+            },
+        )
+
+        assert set_response.status_code == 200
+
+        clear_response = client.delete(
+            f"/sessions/{session_id}/cookies",
+        )
+
+        assert clear_response.status_code == 200
+        assert clear_response.json() == {
+            "id": session_id,
+            "status": "cookies_cleared",
+        }
+
+        get_response = client.get(
+            f"/sessions/{session_id}/cookies",
+        )
+
+        assert get_response.status_code == 200
+        assert get_response.json() == {
+            "id": session_id,
+            "cookies": [],
+        }
+
+
+def test_api_cookies_missing_session() -> None:
+    """The API should return 404 for an unknown session."""
+    with TestClient(app) as client:
+        response = client.get(
+            "/sessions/does-not-exist/cookies",
+        )
+
+        assert response.status_code == 404
+        assert response.json() == {
+            "detail": "Session not found",
+        }
