@@ -11,23 +11,15 @@ def is_allowed_scheme(scheme: str) -> bool:
     """Return True when the URL scheme is allowed for browser navigation."""
     return scheme.lower() in ALLOWED_SCHEMES
 
-
 def is_public_ip_address(host: str) -> bool:
-    """Return True when an IP address is globally reachable."""
+    """Return True when a literal IP address is globally reachable."""
     try:
         address = ipaddress.ip_address(host)
     except ValueError:
-        return False
+        # The host is a domain name rather than a literal IP address.
+        return True
 
-    return (
-        address.is_global
-        and not address.is_loopback
-        and not address.is_private
-        and not address.is_link_local
-        and not address.is_reserved
-        and not address.is_unspecified
-    )
-
+    return address.is_global
 
 def is_safe_hostname(hostname: str) -> bool:
     """Return True when a hostname is syntactically safe to resolve."""
