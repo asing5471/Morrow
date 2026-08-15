@@ -62,6 +62,14 @@ class BrowserSession:
         locator = self.page.locator(selector)
         return await locator.count() > 0
 
+    async def get_element_text(self, selector: str) -> str:
+        """Return the visible text of an element matching the selector."""
+        try:
+            return await self.page.locator(selector).inner_text()
+        except Exception as exc:
+            raise ValueError("Unable to get element text") from exc
+
+
     async def click(self, selector: str) -> None:
         """Click an element matching the selector."""
         try:
