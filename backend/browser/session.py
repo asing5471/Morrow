@@ -87,6 +87,13 @@ class BrowserSession:
         except Exception as exc:
             raise ValueError("Unable to type into element") from exc
 
+    async def hover(self, selector: str) -> None:
+        """Hover over an element matching the selector."""
+        try:
+            await self.page.locator(selector).hover()
+        except Exception as exc:
+            raise ValueError("Unable to hover over element") from exc
+
     async def navigate(self, url: str) -> None:
         """Navigate the session's page to an allowed web URL."""
         if not await is_safe_navigation_url(url):
