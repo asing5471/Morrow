@@ -176,6 +176,78 @@ async def type_into_element(
         "selector": action.selector,
     }
 
+@router.get("/{session_id}/cookies")
+async def get_session_cookies(
+    session_id: str,
+    request: Request,
+) -> dict[str, object]:
+    """Return cookies for the browser session."""
+    manager = get_session_manager(request)
+    session = manager.get_session(session_id)
+
+    if session is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Session not found",
+        )
+
+    return {
+        "id": session.id,
+        "cookies": await session.get_cookies(),
+    }
+
+
+@router.post("/{session_id}/cookies")
+async def set_session_cookie(
+    session_id: str,
+    cookie: CookieRequest,
+    request: Request,
+) -> dict[str, str]:
+    """Add a cookie to the browser session."""
+    manager = get_session_manager(request)
+    session = manager.get_session(session_id)
+
+    if session is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Session not found",
+        )
+
+    try:
+        await session.set_cookie(cookie.model_dump())
+    except Exception as exc:
+        raise HTTPException(
+            status_code=400,
+            detail="Unable to set cookie",
+        ) from exc
+
+    return {
+        "id": session.id,
+        "status": "cookie_set",
+        "name": cookie.name,
+    }
+
+@router.delete("/{session_id}/cookies")
+async def clear_session_cookies(
+    session_id: str,
+    request: Request,
+) -> dict[str, str]:
+    """Clear all cookies from the browser session."""
+    manager = get_session_manager(request)
+    session = manager.get_session(session_id)
+
+    if session is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Session not found",
+        )
+
+    await session.clear_cookies()
+
+    return {
+        "id": session.id,
+        "status": "cookies_cleared",
+    }
 
 @router.post("/{session_id}/hover")
 async def hover_element(
