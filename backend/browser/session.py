@@ -69,6 +69,9 @@ class BrowserSession:
         except Exception as exc:
             raise ValueError("Unable to get element text") from exc
 
+    async def screenshot(self) -> bytes:
+        """Capture the current browser page as a PNG image."""
+        return await self.page.screenshot(type="png")
 
     async def click(self, selector: str) -> None:
         """Click an element matching the selector."""
