@@ -106,6 +106,25 @@ class BrowserSession:
         """Clear all cookies from the current browser context."""
         await self.context.clear_cookies()
 
+    async def get_local_storage(self) -> dict[str, str]:
+        """Return all local storage values for the current page."""
+        return await self.page.evaluate(
+            "() => Object.fromEntries(Object.entries(localStorage))"
+        )
+
+    async def set_local_storage(self, key: str, value: str) -> None:
+        """Set a local storage value for the current page."""
+        await self.page.evaluate(
+            """([key, value]) => {
+                localStorage.setItem(key, value);
+            }""",
+            [key, value],
+        )
+
+    async def clear_local_storage(self) -> None:
+        """Clear all local storage for the current page."""
+        await self.page.evaluate("() => localStorage.clear()")
+
     async def navigate(self, url: str) -> None:
         """Navigate the session's page to an allowed web URL."""
         if not await is_safe_navigation_url(url):
