@@ -623,3 +623,62 @@ def test_api_session_storage_missing_session() -> None:
         assert response.json() == {
             "detail": "Session not found",
         }
+
+def test_api_set_local_storage_missing_session() -> None:
+    """The API should return 404 when setting localStorage in an unknown session."""
+    with TestClient(app) as client:
+        response = client.post(
+            "/sessions/does-not-exist/storage/local",
+            json={
+                "key": "morrow_test",
+                "value": "hello",
+            },
+        )
+
+        assert response.status_code == 404
+        assert response.json() == {
+            "detail": "Session not found",
+        }
+
+
+def test_api_clear_local_storage_missing_session() -> None:
+    """The API should return 404 when clearing localStorage in an unknown session."""
+    with TestClient(app) as client:
+        response = client.delete(
+            "/sessions/does-not-exist/storage/local",
+        )
+
+        assert response.status_code == 404
+        assert response.json() == {
+            "detail": "Session not found",
+        }
+
+
+def test_api_set_session_storage_missing_session() -> None:
+    """The API should return 404 when setting sessionStorage in an unknown session."""
+    with TestClient(app) as client:
+        response = client.post(
+            "/sessions/does-not-exist/storage/session",
+            json={
+                "key": "morrow_test",
+                "value": "hello",
+            },
+        )
+
+        assert response.status_code == 404
+        assert response.json() == {
+            "detail": "Session not found",
+        }
+
+
+def test_api_clear_session_storage_missing_session() -> None:
+    """The API should return 404 when clearing sessionStorage in an unknown session."""
+    with TestClient(app) as client:
+        response = client.delete(
+            "/sessions/does-not-exist/storage/session",
+        )
+
+        assert response.status_code == 404
+        assert response.json() == {
+            "detail": "Session not found",
+        }
