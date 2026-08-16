@@ -327,6 +327,7 @@ def test_api_hover_element_invalid_selector() -> None:
             "detail": "Unable to hover over element",
         }
 
+
 def test_api_set_and_get_cookies() -> None:
     """The API should set and return browser cookies."""
     with TestClient(app) as client:
@@ -412,6 +413,210 @@ def test_api_cookies_missing_session() -> None:
     with TestClient(app) as client:
         response = client.get(
             "/sessions/does-not-exist/cookies",
+        )
+
+        assert response.status_code == 404
+        assert response.json() == {
+            "detail": "Session not found",
+        }
+
+
+def test_api_local_storage() -> None:
+    """The API should set and return localStorage values."""
+    with TestClient(app) as client:
+        create_response = client.post("/sessions")
+
+        assert create_response.status_code == 201
+        session_id = create_response.json()["id"]
+
+        navigate_response = client.post(
+            f"/sessions/{session_id}/navigate",
+            json={"url": "https://example.com"},
+        )
+
+        assert navigate_response.status_code == 200
+
+        set_response = client.post(
+            f"/sessions/{session_id}/storage/local",
+            json={
+                "key": "morrow_test",
+                "value": "hello",
+            },
+        )
+
+        assert set_response.status_code == 200
+        assert set_response.json() == {
+            "id": session_id,
+            "status": "local_storage_set",
+            "key": "morrow_test",
+        }
+
+        get_response = client.get(
+            f"/sessions/{session_id}/storage/local",
+        )
+
+        assert get_response.status_code == 200
+        assert get_response.json() == {
+            "id": session_id,
+            "storage": {
+                "morrow_test": "hello",
+            },
+        }
+
+
+def test_api_clear_local_storage() -> None:
+    """The API should clear all localStorage values."""
+    with TestClient(app) as client:
+        create_response = client.post("/sessions")
+
+        assert create_response.status_code == 201
+        session_id = create_response.json()["id"]
+
+        navigate_response = client.post(
+            f"/sessions/{session_id}/navigate",
+            json={"url": "https://example.com"},
+        )
+
+        assert navigate_response.status_code == 200
+
+        set_response = client.post(
+            f"/sessions/{session_id}/storage/local",
+            json={
+                "key": "morrow_test",
+                "value": "hello",
+            },
+        )
+
+        assert set_response.status_code == 200
+
+        clear_response = client.delete(
+            f"/sessions/{session_id}/storage/local",
+        )
+
+        assert clear_response.status_code == 200
+        assert clear_response.json() == {
+            "id": session_id,
+            "status": "local_storage_cleared",
+        }
+
+        get_response = client.get(
+            f"/sessions/{session_id}/storage/local",
+        )
+
+        assert get_response.status_code == 200
+        assert get_response.json() == {
+            "id": session_id,
+            "storage": {},
+        }
+
+
+def test_api_local_storage_missing_session() -> None:
+    """The API should return 404 for an unknown session."""
+    with TestClient(app) as client:
+        response = client.get(
+            "/sessions/does-not-exist/storage/local",
+        )
+
+        assert response.status_code == 404
+        assert response.json() == {
+            "detail": "Session not found",
+        }
+
+
+def test_api_session_storage() -> None:
+    """The API should set and return sessionStorage values."""
+    with TestClient(app) as client:
+        create_response = client.post("/sessions")
+
+        assert create_response.status_code == 201
+        session_id = create_response.json()["id"]
+
+        navigate_response = client.post(
+            f"/sessions/{session_id}/navigate",
+            json={"url": "https://example.com"},
+        )
+
+        assert navigate_response.status_code == 200
+
+        set_response = client.post(
+            f"/sessions/{session_id}/storage/session",
+            json={
+                "key": "morrow_test",
+                "value": "hello",
+            },
+        )
+
+        assert set_response.status_code == 200
+        assert set_response.json() == {
+            "id": session_id,
+            "status": "session_storage_set",
+            "key": "morrow_test",
+        }
+
+        get_response = client.get(
+            f"/sessions/{session_id}/storage/session",
+        )
+
+        assert get_response.status_code == 200
+        assert get_response.json() == {
+            "id": session_id,
+            "storage": {
+                "morrow_test": "hello",
+            },
+        }
+
+
+def test_api_clear_session_storage() -> None:
+    """The API should clear all sessionStorage values."""
+    with TestClient(app) as client:
+        create_response = client.post("/sessions")
+
+        assert create_response.status_code == 201
+        session_id = create_response.json()["id"]
+
+        navigate_response = client.post(
+            f"/sessions/{session_id}/navigate",
+            json={"url": "https://example.com"},
+        )
+
+        assert navigate_response.status_code == 200
+
+        set_response = client.post(
+            f"/sessions/{session_id}/storage/session",
+            json={
+                "key": "morrow_test",
+                "value": "hello",
+            },
+        )
+
+        assert set_response.status_code == 200
+
+        clear_response = client.delete(
+            f"/sessions/{session_id}/storage/session",
+        )
+
+        assert clear_response.status_code == 200
+        assert clear_response.json() == {
+            "id": session_id,
+            "status": "session_storage_cleared",
+        }
+
+        get_response = client.get(
+            f"/sessions/{session_id}/storage/session",
+        )
+
+        assert get_response.status_code == 200
+        assert get_response.json() == {
+            "id": session_id,
+            "storage": {},
+        }
+
+
+def test_api_session_storage_missing_session() -> None:
+    """The API should return 404 for an unknown session."""
+    with TestClient(app) as client:
+        response = client.get(
+            "/sessions/does-not-exist/storage/session",
         )
 
         assert response.status_code == 404
