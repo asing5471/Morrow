@@ -38,7 +38,7 @@ class HoverRequest(BaseModel):
 
 
 class StorageRequest(BaseModel):
-    """Request body for setting a local storage value."""
+    """Request body for setting a browser storage value."""
 
     key: str
     value: str
@@ -292,12 +292,12 @@ async def hover_element(
     }
 
 
-@router.get("/{session_id}/storage")
-async def get_session_storage(
+@router.get("/{session_id}/storage/local")
+async def get_local_storage(
     session_id: str,
     request: Request,
 ) -> dict[str, object]:
-    """Return local storage for the browser session."""
+    """Return localStorage for the browser session."""
     manager = get_session_manager(request)
     session = manager.get_session(session_id)
 
@@ -313,13 +313,13 @@ async def get_session_storage(
     }
 
 
-@router.post("/{session_id}/storage")
-async def set_session_storage(
+@router.post("/{session_id}/storage/local")
+async def set_local_storage(
     session_id: str,
     storage: StorageRequest,
     request: Request,
 ) -> dict[str, str]:
-    """Set a local storage value for the browser session."""
+    """Set a localStorage value for the browser session."""
     manager = get_session_manager(request)
     session = manager.get_session(session_id)
 
@@ -339,17 +339,17 @@ async def set_session_storage(
 
     return {
         "id": session.id,
-        "status": "storage_set",
+        "status": "local_storage_set",
         "key": storage.key,
     }
 
 
-@router.delete("/{session_id}/storage")
-async def clear_session_storage(
+@router.delete("/{session_id}/storage/local")
+async def clear_local_storage(
     session_id: str,
     request: Request,
 ) -> dict[str, str]:
-    """Clear local storage for the browser session."""
+    """Clear localStorage for the browser session."""
     manager = get_session_manager(request)
     session = manager.get_session(session_id)
 
@@ -363,5 +363,80 @@ async def clear_session_storage(
 
     return {
         "id": session.id,
-        "status": "storage_cleared",
+        "status": "local_storage_cleared",
+    }
+
+
+@router.get("/{session_id}/storage/session")
+async def get_session_storage(
+    session_id: str,
+    request: Request,
+) -> dict[str, object]:
+    """Return sessionStorage for the browser session."""
+    manager = get_session_manager(request)
+    session = manager.get_session(session_id)
+
+    if session is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Session not found",
+        )
+
+    return {
+        "id": session.id,
+        "storage": await session.get_session_storage(),
+    }
+
+
+@router.post("/{session_id}/storage/session")
+async def set_session_storage(
+    session_id: str,
+    storage: StorageRequest,
+    request: Request,
+) -> dict[str, str]:
+    """Set a sessionStorage value for the browser session."""
+    manager = get_session_manager(request)
+    session = manager.get_session(session_id)
+
+    if session is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Session not found",
+        )
+
+    try:
+        await session.set_session_storage(storage.key, storage.value)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=400,
+            detail="Unable to set session storage",
+        ) from exc
+
+    return {
+        "id": session.id,
+        "status": "session_storage_set",
+        "key": storage.key,
+    }
+
+
+@router.delete("/{session_id}/storage/session")
+async def clear_session_storage(
+    session_id: str,
+    request: Request,
+) -> dict[str, str]:
+    """Clear sessionStorage for the browser session."""
+    manager = get_session_manager(request)
+    session = manager.get_session(session_id)
+
+    if session is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Session not found",
+        )
+
+    await session.clear_session_storage()
+
+    return {
+        "id": session.id,
+        "status": "session_storage_cleared",
     }
