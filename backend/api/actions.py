@@ -331,6 +331,32 @@ async def get_local_storage(
         "storage": await session.get_local_storage(),
     }
 
+@router.get("/{session_id}/events")
+async def get_session_events(
+    session_id: str,
+    request: Request,
+) -> dict[str, object]:
+    """Return in-memory browser events for a session."""
+    manager = get_session_manager(request)
+    session = manager.get_session(session_id)
+
+    if session is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Session not found",
+        )
+
+    return {
+        "id": session.id,
+        "events": [
+            {
+                "type": event.type,
+                "timestamp": event.timestamp.isoformat(),
+                "data": event.data,
+            }
+            for event in session.event_logger.all()
+        ],
+    }
 
 @router.post("/{session_id}/storage/local")
 async def set_local_storage(
