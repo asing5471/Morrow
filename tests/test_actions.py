@@ -67,6 +67,46 @@ def test_api_find_element_missing_session() -> None:
             "detail": "Session not found",
         }
 
+def test_api_get_page() -> None:
+    """The API should return the current page DOM as HTML."""
+    with TestClient(app) as client:
+        create_response = client.post("/sessions")
+
+        assert create_response.status_code == 201
+        session_id = create_response.json()["id"]
+
+        navigate_response = client.post(
+            f"/sessions/{session_id}/navigate",
+            json={"url": "https://example.com"},
+        )
+
+        assert navigate_response.status_code == 200
+
+        response = client.get(
+            f"/sessions/{session_id}/page",
+        )
+
+        assert response.status_code == 200
+
+        body = response.json()
+
+        assert body["id"] == session_id
+        assert "<html" in body["html"].lower()
+        assert "Example Domain" in body["html"]
+
+
+def test_api_get_page_missing_session() -> None:
+    """The API should return 404 for an unknown session."""
+    with TestClient(app) as client:
+        response = client.get(
+            "/sessions/does-not-exist/page",
+        )
+
+        assert response.status_code == 404
+        assert response.json() == {
+            "detail": "Session not found",
+        }
+
 
 def test_api_click_element() -> None:
     """The API should click an element in the browser session."""
