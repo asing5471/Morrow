@@ -107,7 +107,7 @@ class BrowserSession:
         await self.context.add_cookies([cookie])
 
     async def clear_cookies(self) -> None:
-        """Clear all cookies from the current browser context."""
+        """Clear all cookies from the browser session."""
         await self.context.clear_cookies()
 
     async def get_local_storage(self) -> dict[str, str]:
@@ -145,7 +145,7 @@ class BrowserSession:
         )
 
     async def clear_session_storage(self) -> None:
-        """Clear all sessionStorage entries for the current page."""
+        """Clear sessionStorage for the current page."""
         await self.page.evaluate("() => sessionStorage.clear()")
 
     async def navigate(self, url: str) -> None:
