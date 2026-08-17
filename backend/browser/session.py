@@ -57,6 +57,10 @@ class BrowserSession:
             "text": await self.page.locator("body").inner_text(),
         }
 
+    async def get_dom(self) -> str:
+        """Return the current page DOM as HTML."""
+        return await self.page.content()
+
     async def find_element(self, selector: str) -> bool:
         """Return whether an element matching the selector exists."""
         locator = self.page.locator(selector)
