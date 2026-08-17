@@ -71,6 +71,25 @@ async def find_element(
         "found": await session.find_element(selector),
     }
 
+@router.get("/{session_id}/page")
+async def get_page_dom(
+    session_id: str,
+    request: Request,
+) -> dict[str, str]:
+    """Return the current page DOM as HTML."""
+    manager = get_session_manager(request)
+    session = manager.get_session(session_id)
+
+    if session is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Session not found",
+        )
+
+    return {
+        "id": session.id,
+        "html": await session.get_dom(),
+    }
 
 @router.get("/{session_id}/element/text")
 async def get_element_text(
